@@ -77,8 +77,10 @@ object CalendarUtils {
                         eventStartTime = "Hora inválida"
                     }
 
-                    // Adiciona o evento à lista
-                    events.add(Event(summary, description, eventDate, eventStartTime, eventEndTime, location))
+                    // Adiciona o evento à lista, superiores à data dia
+                    if (eventDate >= today) {
+                        events.add(Event(summary, description, eventDate, eventStartTime, eventEndTime, location))
+                        }
                 }
             }
         } catch (e: Exception) {
