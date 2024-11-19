@@ -6,6 +6,7 @@ import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.Summary
 import net.fortuna.ical4j.model.property.Description
 import net.fortuna.ical4j.model.property.DtStart
+import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.Location
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -35,6 +36,7 @@ object CalendarUtils {
     fun parseICalData(icalData: String): List<EventsByDay> {
         val events = mutableListOf<Event>()
         val builder = CalendarBuilder()
+        val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date()) // Data atual
 
         try {
             val stringReader = StringReader(icalData)
@@ -45,29 +47,38 @@ object CalendarUtils {
                     val summary = (component.getProperty("SUMMARY") as? Summary)?.value ?: "Sem título"
                     val description = (component.getProperty("DESCRIPTION") as? Description)?.value ?: "Sem descrição"
                     val start = (component.getProperty("DTSTART") as? DtStart)?.value ?: ""
+                    val end = (component.getProperty("DTEND") as? DtEnd)?.value ?: ""
                     val location = (component.getProperty("LOCATION") as? Location)?.value ?: "Local não especificado"
 
                     var eventDate: String
-                    var eventTime: String
+                    var eventStartTime: String
+                    var eventEndTime: String = "Hora de término não especificada" // Valor padrão para DTEND ausente
 
                     try {
-                        // Parsing da data no formato sem 'Z'
                         val inputDateFormat = SimpleDateFormat("yyyyMMdd'T'HHmmss", Locale.US)
-                        val parsedDate = inputDateFormat.parse(start)
 
+                        // Parsing do horário de início
+                        val parsedStartDate = inputDateFormat.parse(start)
                         val dateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
                         val timeFormatter = SimpleDateFormat("HH:mm", Locale.getDefault())
 
-                        eventDate = dateFormatter.format(parsedDate ?: Date())
-                        eventTime = timeFormatter.format(parsedDate ?: Date())
+                        eventDate = dateFormatter.format(parsedStartDate ?: Date())
+                        eventStartTime = timeFormatter.format(parsedStartDate ?: Date())
+
+                        // Parsing do horário de término, se disponível
+                        if (end.isNotEmpty()) {
+                            val parsedEndDate = inputDateFormat.parse(end)
+                            eventEndTime = timeFormatter.format(parsedEndDate ?: Date())
+                        }
                     } catch (e: Exception) {
                         e.printStackTrace()
                         Log.e("Calendar", "Erro ao processar data: ${e.message}")
                         eventDate = "Data inválida"
-                        eventTime = "Hora inválida"
+                        eventStartTime = "Hora inválida"
                     }
 
-                    events.add(Event(summary, description, eventDate, eventTime, location))
+                    // Adiciona o evento à lista
+                    events.add(Event(summary, description, eventDate, eventStartTime, eventEndTime, location))
                 }
             }
         } catch (e: Exception) {
@@ -75,7 +86,11 @@ object CalendarUtils {
             Log.e("Calendar", "Erro ao processar eventos: ${e.message}")
         }
 
-        return events.groupBy { it.startDate }
+        // Ordena e agrupa os eventos
+        return events
+            .sortedBy { it.startDate } // Ordena por data
+            .groupBy { it.startDate }
             .map { EventsByDay(it.key, it.value) }
     }
+
 }

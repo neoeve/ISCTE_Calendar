@@ -63,15 +63,20 @@ class EventsAdapter(
 
     class EventViewHolder(
         view: View,
-        private val onEventClick: (Event) -> Unit // Callback para cliques
+        private val onEventClick: (Event) -> Unit
     ) : RecyclerView.ViewHolder(view) {
         private val titleTextView: TextView = view.findViewById(R.id.eventTitleTextView)
         private val timeTextView: TextView = view.findViewById(R.id.eventTimeTextView)
+        private val endTimeTextView: TextView = view.findViewById(R.id.eventEndTimeTextView)
+        private val locationTextView: TextView = view.findViewById(R.id.eventLocationTextView)
+
         fun bind(event: Event) {
             titleTextView.text = event.title
-            timeTextView.text = event.startTime
+            timeTextView.text = "Início: ${event.startTime}"
+            endTimeTextView.text = "Fim: ${event.endTime}" // Exibe a hora final
+            locationTextView.text = event.location
             itemView.setOnClickListener {
-                onEventClick(event) // Chama o callback ao clicar no evento
+                onEventClick(event)
             }
         }
     }
