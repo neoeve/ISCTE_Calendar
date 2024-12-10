@@ -62,4 +62,6 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.recyclerview)
     implementation(libs.material)
+    implementation(libs.retrofit)
+    implementation(libs.converter.gson)
 }

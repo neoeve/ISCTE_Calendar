@@ -1,3 +1,14 @@
 <resources>
     <string name="app_name">ISCTE Calendar</string>
+    <string name="numero">Número Aluno</string>
+    <string name="email">Email</string>
+    <string name="senha">Senha</string>
+    <string name="turma">Turma</string>
+    <string name="registar">Registar</string>
+    <string name="entrar">Entrar</string>
+    <string name="registarse">Registrar-se</string>
+    <string name="disciplina">Disciplina</string>
+    <string name="data">Data</string>
+    <string name="horario">Horário</string>
+    <string name="sala">Sala</string>
 </resources>

@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
@@ -7,32 +6,31 @@
     android:padding="8dp">
 
     <TextView
-        android:id="@+id/eventTitleTextView"
+        android:id="@+id/disciplineTextView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textSize="16sp"
-        android:textStyle="bold" />
+        android:text="@string/disciplina"
+        android:textStyle="bold"
+        android:textSize="16sp" />
 
     <TextView
-        android:id="@+id/eventTimeTextView"
+        android:id="@+id/dateTextView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:text="@string/data"
         android:textSize="14sp" />
 
     <TextView
-        android:id="@+id/eventEndTimeTextView"
+        android:id="@+id/timeTextView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textSize="14sp"
-        android:textColor="@android:color/darker_gray" />
+        android:text="@string/horario"
+        android:textSize="14sp" />
 
     <TextView
-        android:id="@+id/eventLocationTextView"
+        android:id="@+id/roomTextView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textSize="14sp"
-        android:textColor="@android:color/darker_gray" />
+        android:text="@string/sala"
+        android:textSize="14sp" />
 </LinearLayout>
-
-
-

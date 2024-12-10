@@ -5,13 +5,13 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.isctecalendar.adapters.EventsAdapter
-import com.example.isctecalendar.fragments.EventDetailsDialogFragment
-import com.example.isctecalendar.utils.CalendarUtils
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import com.example.isctecalendar.network.ApiService
+import com.example.isctecalendar.network.RetrofitClient
+import com.example.isctecalendar.data.Schedule
+import com.example.isctecalendar.adapters.ScheduleAdapter
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 class MainActivity : AppCompatActivity() {
 
@@ -19,30 +19,42 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        System.setProperty("net.fortuna.ical4j.timezone.cache.impl", "net.fortuna.ical4j.util.MapTimeZoneCache")
+        // Obtém a turma passada pela LoginActivity ou RegisterActivity
+        val turma = intent.getStringExtra("turma") ?: ""
 
-        // Inicializa o RecyclerView
-        val recyclerView: RecyclerView = findViewById(R.id.recyclerView)
-        recyclerView.layoutManager = LinearLayoutManager(this)
+        if (turma.isNotEmpty()) {
+            fetchSchedule(turma)
+        } else {
+            Toast.makeText(this, "Erro: Turma não encontrada.", Toast.LENGTH_SHORT).show()
+        }
+    }
 
-        val url = "https://fenix-mais.iscte-iul.pt/api/ical/publicPersonICalendar?username=dadcl1@iscte-iul.pt&password=rzaSYT3SAo6j6uP1wOQrh337jHB35IDYZj15Tdt3MdscyXWDInXmI1Z9dX7AvdqXjiRUDvyPBMolxwwjHV8OnqAlOkwcYCYYXKCPwpe1EjAB7RSTxBI0M4wKtRu1skko"
+    private fun fetchSchedule(turma: String) {
+        val apiService = RetrofitClient.instance.create(ApiService::class.java)
 
-        // Busca os eventos do calendário
-        CoroutineScope(Dispatchers.IO).launch {
-            val events = CalendarUtils.fetchCalendarEventsFromUrl(url)
-
-            // Atualiza a UI na thread principal
-            withContext(Dispatchers.Main) {
-                if (events.isNotEmpty()) {
-                    val adapter = EventsAdapter(events) { event ->
-                        // Trata cliques nos eventos
-                        EventDetailsDialogFragment(event).show(supportFragmentManager, "EventDetails")
+        apiService.getSchedule(turma).enqueue(object : Callback<List<Schedule>> {
+            override fun onResponse(call: Call<List<Schedule>>, response: Response<List<Schedule>>) {
+                if (response.isSuccessful) {
+                    val scheduleList = response.body()
+                    if (!scheduleList.isNullOrEmpty()) {
+                        setupRecyclerView(scheduleList)
+                    } else {
+                        Toast.makeText(this@MainActivity, "Nenhum horário encontrado para a turma.", Toast.LENGTH_SHORT).show()
                     }
-                    recyclerView.adapter = adapter
                 } else {
-                    Toast.makeText(this@MainActivity, "Nenhum evento encontrado!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@MainActivity, "Erro ao buscar horário.", Toast.LENGTH_SHORT).show()
                 }
             }
-        }
+
+            override fun onFailure(call: Call<List<Schedule>>, t: Throwable) {
+                Toast.makeText(this@MainActivity, "Erro de rede: ${t.message}", Toast.LENGTH_SHORT).show()
+            }
+        })
+    }
+
+    private fun setupRecyclerView(scheduleList: List<Schedule>) {
+        val recyclerView: RecyclerView = findViewById(R.id.recyclerView)
+        recyclerView.layoutManager = LinearLayoutManager(this)
+        recyclerView.adapter = ScheduleAdapter(scheduleList)
     }
 }
