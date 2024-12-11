@@ -1,10 +1,12 @@
 package com.example.isctecalendar.data
 
-data class ScheduleItem(
-    val id: Int,
-    val day: String,
-    val startTime: String,
-    val endTime: String,
-    val subject: String,
-    val classroom: String
-)
+sealed class ScheduleItem {
+    data class Header(val date: String) : ScheduleItem()
+    data class ScheduleDetail(
+        val id: Int,
+        val startTime: String,
+        val endTime: String,
+        val subject: String?,
+        val classRoom: String?
+    ) : ScheduleItem()
+}

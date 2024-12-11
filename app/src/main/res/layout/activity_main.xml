@@ -19,4 +19,12 @@
         android:id="@+id/recyclerView"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
+
+    <Button
+        android:id="@+id/scanQrButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Ler QR Code"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="16dp" />
 </LinearLayout>

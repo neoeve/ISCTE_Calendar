@@ -1,51 +1,88 @@
 package com.example.isctecalendar.adapters
 
+import android.app.AlertDialog
+import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.isctecalendar.R
-import com.example.isctecalendar.data.Schedule
+import com.example.isctecalendar.data.ScheduleItem
 
 class ScheduleAdapter(
-    private val scheduleList: List<Schedule>,
-    private val onAttendanceChange: (scheduleId: Int, isAttending: Boolean) -> Unit
-) : RecyclerView.Adapter<ScheduleAdapter.ScheduleViewHolder>() {
+    private val scheduleList: List<ScheduleItem>,
+    private val onAttendanceAction: (scheduleId: Int, isAttending: Boolean) -> Unit
+) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ScheduleViewHolder {
-        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_schedule, parent, false)
-        return ScheduleViewHolder(view)
+    companion object {
+        private const val VIEW_TYPE_HEADER = 0
+        private const val VIEW_TYPE_DETAIL = 1
     }
 
-    override fun onBindViewHolder(holder: ScheduleViewHolder, position: Int) {
-        val schedule = scheduleList[position]
-
-        holder.dateTextView.text = schedule.date
-        holder.subjectTextView.text = schedule.subject ?: "Matéria não disponível"
-        holder.timeTextView.text = "${schedule.startTime.substring(0, 5)} - ${schedule.endTime.substring(0, 5)}"
-        holder.classRoomTextView.text = schedule.classRoom ?: "Sala não disponível"
-
-        // Listener para presença
-        holder.attendButton.setOnClickListener {
-            onAttendanceChange(schedule.id, true)
+    override fun getItemViewType(position: Int): Int {
+        return when (scheduleList[position]) {
+            is ScheduleItem.Header -> VIEW_TYPE_HEADER
+            is ScheduleItem.ScheduleDetail -> VIEW_TYPE_DETAIL
         }
+    }
 
-        // Listener para ausência
-        holder.notAttendButton.setOnClickListener {
-            onAttendanceChange(schedule.id, false)
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+        return if (viewType == VIEW_TYPE_HEADER) {
+            val view = LayoutInflater.from(parent.context).inflate(R.layout.item_schedule_header, parent, false)
+            HeaderViewHolder(view)
+        } else {
+            val view = LayoutInflater.from(parent.context).inflate(R.layout.item_schedule_detail, parent, false)
+            ScheduleDetailViewHolder(view)
+        }
+    }
+
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        when (val item = scheduleList[position]) {
+            is ScheduleItem.Header -> (holder as HeaderViewHolder).bind(item)
+            is ScheduleItem.ScheduleDetail -> (holder as ScheduleDetailViewHolder).bind(item)
         }
     }
 
     override fun getItemCount(): Int = scheduleList.size
 
-    inner class ScheduleViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val dateTextView: TextView = view.findViewById(R.id.scheduleDate)
-        val subjectTextView: TextView = view.findViewById(R.id.scheduleSubject)
-        val timeTextView: TextView = view.findViewById(R.id.scheduleTime)
-        val classRoomTextView: TextView = view.findViewById(R.id.scheduleClassRoom)
-        val attendButton: Button = view.findViewById(R.id.attendButton)
-        val notAttendButton: Button = view.findViewById(R.id.notAttendButton)
+    inner class HeaderViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        private val headerTextView: TextView = view.findViewById(R.id.scheduleHeader)
+
+        fun bind(header: ScheduleItem.Header) {
+            headerTextView.text = header.date
+        }
+    }
+
+    inner class ScheduleDetailViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        private val subjectTextView: TextView = view.findViewById(R.id.scheduleSubject)
+        private val timeTextView: TextView = view.findViewById(R.id.scheduleTime)
+        private val classRoomTextView: TextView = view.findViewById(R.id.scheduleClassRoom)
+
+        fun bind(detail: ScheduleItem.ScheduleDetail) {
+            subjectTextView.text = detail.subject ?: "Matéria não disponível"
+            timeTextView.text = "${detail.startTime} - ${detail.endTime}"
+            classRoomTextView.text = detail.classRoom ?: "Sala não disponível"
+
+            // Adiciona o clique no item para abrir o dialog
+            itemView.setOnClickListener {
+                showAttendanceDialog(itemView.context, detail.id)
+            }
+        }
+
+        private fun showAttendanceDialog(context: Context, scheduleId: Int) {
+            val dialog = AlertDialog.Builder(context)
+                .setTitle("Vai estar presente?")
+                .setMessage("Deseja marcar presença nesta aula?")
+                .setPositiveButton("Sim") { _, _ ->
+                    onAttendanceAction(scheduleId, true) // Chama a função para marcar presença
+                }
+                .setNegativeButton("Não") { _, _ ->
+                    onAttendanceAction(scheduleId, false) // Chama a função para marcar ausência
+                }
+                .create()
+
+            dialog.show()
+        }
     }
 }

@@ -16,6 +16,8 @@ material = "1.9.0"
 androidx-appcompat = "1.7.0"
 retrofit = "2.9.0"
 gson = "2.9.0"
+zxing-core = "3.5.1"
+zxing-android = "4.3.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -40,6 +42,8 @@ recyclerview = { module = "androidx.recyclerview:recyclerview", version.ref = "r
 material = { module = "com.google.android.material:material", version.ref = "material" }
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
 converter-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref = "gson" }
+zxing-core = { module = "com.google.zxing:core", version.ref = "zxing-core" }
+zxing-android = { module = "com.journeyapps:zxing-android-embedded", version.ref = "zxing-android" }
 
 
 [plugins]

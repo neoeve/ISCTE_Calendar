@@ -64,4 +64,6 @@ dependencies {
     implementation(libs.material)
     implementation(libs.retrofit)
     implementation(libs.converter.gson)
+    implementation(libs.zxing.core)
+    implementation(libs.zxing.android)
 }

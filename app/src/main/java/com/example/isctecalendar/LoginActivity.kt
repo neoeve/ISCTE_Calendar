@@ -55,8 +55,10 @@ class LoginActivity : AppCompatActivity() {
                     val body = response.body()
                     if (body?.success == true) {
                         val classGroupId = response.body()?.student?.classGroupId
+                        val studentId = response.body()?.student?.number
                         val intent = Intent(this@LoginActivity, MainActivity::class.java)
                         intent.putExtra("classGroupId", classGroupId)
+                        intent.putExtra("studentId", studentId)
                         startActivity(intent)
                         finish()
                     } else {

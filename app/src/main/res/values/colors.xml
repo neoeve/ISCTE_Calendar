@@ -8,4 +8,10 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="gray">#808080</color>
+    <color name="dateBackground">#3F51B5</color> <!-- Azul escuro -->
+    <color name="timeColor">#FF5722</color> <!-- Laranja -->
+    <color name="classRoomColor">#757575</color> <!-- Cinza -->
+    <color name="morningColor">#4CAF50</color> <!-- Verde -->
+    <color name="afternoonColor">#FFC107</color> <!-- Amarelo -->
+    <color name="eveningColor">#F44336</color> <!-- Vermelho -->
 </resources>

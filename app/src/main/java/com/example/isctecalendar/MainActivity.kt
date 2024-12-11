@@ -1,34 +1,61 @@
 package com.example.isctecalendar
 
 import android.os.Bundle
-import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.isctecalendar.network.ApiService
 import com.example.isctecalendar.network.RetrofitClient
-import com.example.isctecalendar.data.Schedule
-import com.example.isctecalendar.adapters.ScheduleAdapter
 import com.example.isctecalendar.data.ScheduleResponse
+import com.example.isctecalendar.data.ScheduleItem
+import com.example.isctecalendar.adapters.ScheduleAdapter
+import com.example.isctecalendar.data.AttendanceRequest
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import java.text.SimpleDateFormat
+import java.util.*
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var recyclerView: RecyclerView
     private lateinit var scheduleAdapter: ScheduleAdapter
-    private val scheduleList = mutableListOf<Schedule>()
+    private val scheduleItems = mutableListOf<ScheduleItem>() // Lista de ScheduleItem
+    private var userId: Int = -1 // ID do usuário
+
+    private fun formatMonth(dateString: String): String {
+        val inputFormat = SimpleDateFormat("yyyy-MM", Locale.getDefault())
+        val date = inputFormat.parse(dateString)
+        val outputFormat = SimpleDateFormat("MMMM yyyy", Locale.getDefault()) // Mês por extenso
+        return outputFormat.format(date!!)
+    }
+
+    private fun formatDay(dateString: String): String {
+        val inputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val date = inputFormat.parse(dateString)
+        val outputFormat = SimpleDateFormat("EEEE, dd", Locale.getDefault()) // Dia da semana e dia
+        return outputFormat.format(date!!)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+
+        // Obtém o ID do aluno a partir da Intent
+        userId = intent.getIntExtra("studentId", -1)
+
+        if (userId == -1) {
+            Toast.makeText(this, "Erro: ID do utilizador não encontrado.", Toast.LENGTH_SHORT).show()
+            finish()
+            return
+        }
+
         // Configura RecyclerView
         recyclerView = findViewById(R.id.recyclerView)
-        scheduleAdapter = ScheduleAdapter(scheduleList) { scheduleId, isAttending ->
-            markAttendance(scheduleId, isAttending)
+        scheduleAdapter = ScheduleAdapter(scheduleItems) { scheduleId, isAttending ->
+            markAttendance(scheduleId, userId, isAttending)
         }
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = scheduleAdapter
@@ -45,12 +72,35 @@ class MainActivity : AppCompatActivity() {
         }
 
         val apiService = RetrofitClient.instance.create(ApiService::class.java)
-        apiService.getScheduleByClassGroup(classGroupId).enqueue(object : Callback<List<Schedule>> {
-            override fun onResponse(call: Call<List<Schedule>>, response: Response<List<Schedule>>) {
+        apiService.getScheduleByClassGroup(classGroupId).enqueue(object : Callback<ScheduleResponse> {
+            override fun onResponse(call: Call<ScheduleResponse>, response: Response<ScheduleResponse>) {
                 if (response.isSuccessful) {
-                    response.body()?.let {
-                        scheduleList.clear()
-                        scheduleList.addAll(it)
+                    response.body()?.schedules?.let { schedules ->
+                        scheduleItems.clear()
+
+                        // Agrupar por mês e por dia
+                        val groupedByMonth = schedules.groupBy { it.date.substring(0, 7) } // "yyyy-MM"
+                        groupedByMonth.forEach { (month, schedulesForMonth) ->
+                            scheduleItems.add(ScheduleItem.Header(formatMonth(month))) // Cabeçalho do mês
+
+                            // Agrupar por dia
+                            val groupedByDay = schedulesForMonth.groupBy { it.date }
+                            groupedByDay.forEach { (day, schedulesForDay) ->
+                                scheduleItems.add(ScheduleItem.Header(formatDay(day))) // Cabeçalho do dia
+
+                                // Adicionar os detalhes do horário
+                                schedulesForDay.forEach { schedule ->
+                                    scheduleItems.add(ScheduleItem.ScheduleDetail(
+                                        id = schedule.id,
+                                        startTime = schedule.startTime,
+                                        endTime = schedule.endTime,
+                                        subject = schedule.subject,
+                                        classRoom = schedule.classRoom
+                                    ))
+                                }
+                            }
+                        }
+
                         scheduleAdapter.notifyDataSetChanged()
                     }
                 } else {
@@ -58,18 +108,16 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
-            override fun onFailure(call: Call<List<Schedule>>, t: Throwable) {
+            override fun onFailure(call: Call<ScheduleResponse>, t: Throwable) {
                 Toast.makeText(this@MainActivity, "Erro de conexão: ${t.message}", Toast.LENGTH_SHORT).show()
             }
         })
     }
 
-    private fun markAttendance(scheduleId: Int, isAttending: Boolean) {
-        val userId = 123 // Substitua pelo ID real do utilizador
-
+    private fun markAttendance(scheduleId: Int, studentId: Int, isAttending: Boolean) {
         val attendanceRequest = AttendanceRequest(
             scheduleId = scheduleId,
-            userId = userId,
+            userId = studentId,
             isAttending = isAttending
         )
 
