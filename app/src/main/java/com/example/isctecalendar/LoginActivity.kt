@@ -2,6 +2,7 @@ package com.example.isctecalendar
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
@@ -49,19 +50,39 @@ class LoginActivity : AppCompatActivity() {
 
         apiService.login(loginRequest).enqueue(object : Callback<LoginResponse> {
             override fun onResponse(call: Call<LoginResponse>, response: Response<LoginResponse>) {
-                if (response.isSuccessful && response.body()?.success == true) {
-                    val idAluno = response.body()?.idAluno
-                    val intent = Intent(this@LoginActivity, MainActivity::class.java)
-                    intent.putExtra("idAluno", idAluno)
-                    startActivity(intent)
-                    finish()
+                if (response.isSuccessful) {
+                    // Verifica se o sucesso foi confirmado no body da resposta
+                    val body = response.body()
+                    if (body?.success == true) {
+                        val classGroupId = response.body()?.student?.classGroupId
+                        val intent = Intent(this@LoginActivity, MainActivity::class.java)
+                        intent.putExtra("classGroupId", classGroupId)
+                        startActivity(intent)
+                        finish()
+                    } else {
+                        Toast.makeText(this@LoginActivity, body?.message ?: "Erro no login", Toast.LENGTH_SHORT).show()
+                    }
                 } else {
-                    Toast.makeText(this@LoginActivity, response.body()?.message ?: "Erro no login", Toast.LENGTH_SHORT).show()
+                    // Lidando com códigos de erro HTTP fora do intervalo 200-299
+                    when (response.code()) {
+                        401 -> {
+                            Toast.makeText(this@LoginActivity, "Credenciais inválidas.", Toast.LENGTH_SHORT).show()
+                        }
+                        500 -> {
+                            Toast.makeText(this@LoginActivity, "Erro no servidor. Tente novamente mais tarde.", Toast.LENGTH_SHORT).show()
+                        }
+                        else -> {
+                            Toast.makeText(this@LoginActivity, "Erro inesperado: ${response.code()}", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    // Log adicional para análise
+                    Log.e("LoginActivity", "Erro HTTP: ${response.code()} - ${response.errorBody()?.string()}")
                 }
             }
 
             override fun onFailure(call: Call<LoginResponse>, t: Throwable) {
                 Toast.makeText(this@LoginActivity, "Erro: ${t.message}", Toast.LENGTH_SHORT).show()
+                Log.e("LoginActivity", "Erro ao conectar ao servidor", t)
             }
         })
     }

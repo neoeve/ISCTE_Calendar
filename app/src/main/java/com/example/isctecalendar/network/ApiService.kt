@@ -3,7 +3,7 @@ import com.example.isctecalendar.data.LoginRequest
 import com.example.isctecalendar.data.LoginResponse
 import com.example.isctecalendar.data.RegisterRequest
 import com.example.isctecalendar.data.RegisterResponse
-import com.example.isctecalendar.data.Schedule
+import com.example.isctecalendar.data.ScheduleResponse
 import retrofit2.Call
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -13,12 +13,12 @@ import retrofit2.http.Path
 
 // Interface com os endpoints
 interface ApiService {
-    @POST("login")
+    @POST("auth/login")
     fun login(@Body request: LoginRequest): Call<LoginResponse>
 
-    @GET("schedule/{turma}")
-    fun getSchedule(@Path("turma") turma: String): Call<List<Schedule>>
+    @GET("schedule/classGroup/{classGroupId}")
+    fun getScheduleByClassGroup(@Path("classGroupId") classGroupId: Int): Call<ScheduleResponse>
 
-    @POST("register")
+    @POST("auth/register")
     fun register(@Body request: RegisterRequest): Call<RegisterResponse>
 }
