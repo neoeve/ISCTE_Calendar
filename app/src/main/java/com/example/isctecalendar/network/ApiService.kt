@@ -1,4 +1,5 @@
 package com.example.isctecalendar.network
+import com.example.isctecalendar.data.AttendanceRequest
 import com.example.isctecalendar.data.LoginRequest
 import com.example.isctecalendar.data.LoginResponse
 import com.example.isctecalendar.data.RegisterRequest
@@ -21,4 +22,7 @@ interface ApiService {
 
     @POST("auth/register")
     fun register(@Body request: RegisterRequest): Call<RegisterResponse>
+
+    @POST("attendance")
+    fun markAttendance(@Body attendanceRequest: AttendanceRequest): Call<Void>
 }
