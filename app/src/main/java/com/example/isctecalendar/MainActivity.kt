@@ -20,6 +20,8 @@ import retrofit2.Response
 import android.widget.ImageButton
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import com.example.isctecalendar.data.ClassRoomResponse
+import com.example.isctecalendar.data.PresenceResponse
 import java.text.SimpleDateFormat
 import java.util.Locale
 import com.google.zxing.integration.android.IntentIntegrator
@@ -32,6 +34,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var scheduleAdapter: ScheduleAdapter
     private val scheduleItems = mutableListOf<ScheduleItem>()
     private var userId: Int = -1 // ID do utilizador
+    private var classGroupId: Int = -1 // Turma do utilizador
     private lateinit var qrCodeLauncher: ActivityResultLauncher<Intent>
 
     private fun formatarMes(data: String): String {
@@ -73,6 +76,13 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
+        classGroupId = intent.getIntExtra("classGroupId", -1)
+
+        if (classGroupId == -1) {
+            Toast.makeText(this, "Erro: ID do grupo de classe não encontrado.", Toast.LENGTH_SHORT).show()
+            return
+        }
+
         // Configura RecyclerView
         recyclerView = findViewById(R.id.recyclerView)
         scheduleAdapter = ScheduleAdapter(scheduleItems) { scheduleId, isAttending ->
@@ -91,12 +101,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun fetchSchedules() {
-        val classGroupId = intent.getIntExtra("classGroupId", -1)
-        if (classGroupId == -1) {
-            Toast.makeText(this, "Erro: ID do grupo de classe não encontrado.", Toast.LENGTH_SHORT).show()
-            return
-        }
-
         val apiService = RetrofitClient.instance.create(ApiService::class.java)
         apiService.getScheduleByClassGroup(classGroupId).enqueue(object : Callback<ScheduleResponse> {
             override fun onResponse(call: Call<ScheduleResponse>, response: Response<ScheduleResponse>) {
@@ -203,39 +207,81 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun validateQrCode(roomId: Int) {
-        val apiService = RetrofitClient.instance.create(ApiService::class.java)
+    private fun handleQrCodeResult(contents: String) {
+        val classRoomId = if (contents.startsWith("sala_")) {
+            contents.removePrefix("sala_").toIntOrNull()
+        } else {
+            null
+        }
 
-        apiService.validateQrCode(roomId).enqueue(object : Callback<Void> {
-            override fun onResponse(call: Call<Void>, response: Response<Void>) {
+        println("QR Code lido: $contents")
+
+        if (classRoomId == null) {
+            Toast.makeText(this, "QR Code inválido", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        // Fazendo a chamada ao endpoint de QR Code
+        val apiService = RetrofitClient.instance.create(ApiService::class.java)
+        apiService.getClassRoomDetails(classRoomId).enqueue(object : Callback<ClassRoomResponse> {
+            override fun onResponse(call: Call<ClassRoomResponse>, response: Response<ClassRoomResponse>) {
                 if (response.isSuccessful) {
-                    Toast.makeText(this@MainActivity, "Presença confirmada na sala!", Toast.LENGTH_SHORT).show()
+                    val classRoom = response.body()?.classRoom
+                    if (classRoom != null) {
+                        Toast.makeText(this@MainActivity, "QR Code lido, sala: ${classRoom.name}", Toast.LENGTH_SHORT).show()
+                        markPresence(userId, classGroupId,classRoomId)
+                    } else {
+                        Toast.makeText(this@MainActivity, response.body()?.message ?: "Erro ao processar QR Code", Toast.LENGTH_SHORT).show()
+                    }
                 } else {
-                    Toast.makeText(this@MainActivity, "Erro ao validar presença.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@MainActivity, "Erro: ${response.message()}", Toast.LENGTH_SHORT).show()
                 }
             }
 
-            override fun onFailure(call: Call<Void>, t: Throwable) {
+            override fun onFailure(call: Call<ClassRoomResponse>, t: Throwable) {
                 Toast.makeText(this@MainActivity, "Erro de conexão: ${t.message}", Toast.LENGTH_SHORT).show()
             }
         })
     }
 
-    private fun handleQrCodeResult(contents: String) {
-        try {
-            // Decodifica o JSON do QR Code
-            val qrData = JSONObject(contents)
-            val roomId = qrData.getInt("roomId") // Obtém o ID da sala do QR Code
-            val roomName = qrData.getString("name") // Nome da sala, opcional
+    private fun markPresence(studentId: Int, classGroupId: Int, classRoomId: Int) {
+        val apiService = RetrofitClient.instance.create(ApiService::class.java)
 
-            // Mostra mensagem temporária
-            Toast.makeText(this, "QR Code da sala: $roomName (ID: $roomId)", Toast.LENGTH_SHORT).show()
+        val requestBody = mapOf(
+            "studentId" to studentId,
+            "classGroupId" to classGroupId,
+            "classRoomId" to classRoomId
+        )
 
-            // Valida o QR Code com o backend
-            validateQrCode(roomId)
-        } catch (e: JSONException) {
-            Toast.makeText(this, "QR Code inválido", Toast.LENGTH_SHORT).show()
-            e.printStackTrace()
-        }
+        apiService.markPresence(requestBody).enqueue(object : Callback<PresenceResponse> {
+            override fun onResponse(call: Call<PresenceResponse>, response: Response<PresenceResponse>) {
+                if (response.isSuccessful) {
+                    val apiResponse = response.body()
+                    if (apiResponse != null && apiResponse.success) {
+                        Toast.makeText(this@MainActivity, apiResponse.message, Toast.LENGTH_SHORT).show()
+                    } else {
+                        // Exibe apenas a mensagem de erro do servidor
+                        Toast.makeText(this@MainActivity, apiResponse?.message ?: "Erro desconhecido.", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    // Extrai apenas a mensagem de erro do corpo da resposta, se disponível
+                    val errorBody = response.errorBody()?.string()
+                    val errorMessage = errorBody?.let {
+                        try {
+                            JSONObject(it).getString("message") // Extrai a mensagem do JSON
+                        } catch (e: JSONException) {
+                            "Erro inesperado."
+                        }
+                    } ?: "Erro inesperado."
+
+                    Toast.makeText(this@MainActivity, errorMessage, Toast.LENGTH_SHORT).show()
+                }
+            }
+
+            override fun onFailure(call: Call<PresenceResponse>, t: Throwable) {
+                Toast.makeText(this@MainActivity, "Erro de conexão: ${t.message}", Toast.LENGTH_SHORT).show()
+            }
+
+        })
     }
 }
