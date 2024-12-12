@@ -1,7 +1,9 @@
 package com.example.isctecalendar
 
+import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -12,13 +14,17 @@ import com.example.isctecalendar.data.ScheduleItem
 import com.example.isctecalendar.adapters.ScheduleAdapter
 import com.example.isctecalendar.data.AttendanceRequest
 import com.example.isctecalendar.data.ScheduleResponse
-import com.google.zxing.integration.android.IntentIntegrator
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import android.widget.Button
+import android.widget.ImageButton
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import java.text.SimpleDateFormat
 import java.util.Locale
+import com.google.zxing.integration.android.IntentIntegrator
+import org.json.JSONException
+import org.json.JSONObject
 
 class MainActivity : AppCompatActivity() {
 
@@ -26,6 +32,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var scheduleAdapter: ScheduleAdapter
     private val scheduleItems = mutableListOf<ScheduleItem>()
     private var userId: Int = -1 // ID do utilizador
+    private lateinit var qrCodeLauncher: ActivityResultLauncher<Intent>
 
     private fun formatarMes(data: String): String {
         val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
@@ -42,6 +49,20 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+
+        // Inicializa o ActivityResultLauncher
+        qrCodeLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                val intent = result.data
+                val scanResult = IntentIntegrator.parseActivityResult(IntentIntegrator.REQUEST_CODE, result.resultCode, intent)
+                if (scanResult != null && scanResult.contents != null) {
+                    handleQrCodeResult(scanResult.contents) // Chama o método para processar o QR Code
+                } else {
+                    Toast.makeText(this, "Leitura cancelada", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
 
         // Obtém o ID do aluno a partir da Intent
         userId = intent.getIntExtra("studentId", -1)
@@ -64,8 +85,9 @@ class MainActivity : AppCompatActivity() {
         fetchSchedules()
 
         // Configurar leitura de QR Code
-        val scanButton = findViewById<Button>(R.id.scanButton)
+        val scanButton = findViewById<ImageButton>(R.id.scanButton)
         scanButton.setOnClickListener { startQrCodeScanner() }
+        scanButton.visibility = View.VISIBLE
     }
 
     private fun fetchSchedules() {
@@ -157,14 +179,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startQrCodeScanner() {
-        IntentIntegrator(this).apply {
-            setDesiredBarcodeFormats(IntentIntegrator.QR_CODE)
-            setPrompt("Posicione o QR Code dentro da área")
-            setCameraId(0) // Use a câmera traseira
-            setBeepEnabled(true) // Som ao ler QR
-            setBarcodeImageEnabled(false)
-            initiateScan()
-        }
+        val integrator = IntentIntegrator(this)
+        integrator.setCaptureActivity(CustomCaptureActivity::class.java)
+        integrator.setDesiredBarcodeFormats(IntentIntegrator.QR_CODE)
+        integrator.setPrompt("Leia o QRCode da Sala")
+        integrator.setCameraId(0) // Use a câmera traseira
+        integrator.setBeepEnabled(false) // Som ao ler QR
+        integrator.setBarcodeImageEnabled(false)
+        integrator.setOrientationLocked(true)
+        qrCodeLauncher.launch(integrator.createScanIntent()) // Usa o ActivityResultLauncher
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -173,23 +196,46 @@ class MainActivity : AppCompatActivity() {
             if (result.contents == null) {
                 Toast.makeText(this, "Leitura cancelada", Toast.LENGTH_SHORT).show()
             } else {
-                handleQrCodeResult(result.contents)
+                handleQrCodeResult(result.contents) // Chama o método para processar o QR Code
             }
         } else {
             super.onActivityResult(requestCode, resultCode, data)
         }
     }
 
-    private fun handleQrCodeResult(contents: String) {
-        // Processar o conteúdo do QR Code
-        Toast.makeText(this, "QR Code lido: $contents", Toast.LENGTH_SHORT).show()
+    private fun validateQrCode(roomId: Int) {
+        val apiService = RetrofitClient.instance.create(ApiService::class.java)
 
-        // Exemplo: usar o ID da aula para marcar presença
-        val scheduleId = contents.toIntOrNull()
-        if (scheduleId != null) {
-            markAttendance(scheduleId, userId, true)
-        } else {
+        apiService.validateQrCode(roomId).enqueue(object : Callback<Void> {
+            override fun onResponse(call: Call<Void>, response: Response<Void>) {
+                if (response.isSuccessful) {
+                    Toast.makeText(this@MainActivity, "Presença confirmada na sala!", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this@MainActivity, "Erro ao validar presença.", Toast.LENGTH_SHORT).show()
+                }
+            }
+
+            override fun onFailure(call: Call<Void>, t: Throwable) {
+                Toast.makeText(this@MainActivity, "Erro de conexão: ${t.message}", Toast.LENGTH_SHORT).show()
+            }
+        })
+    }
+
+    private fun handleQrCodeResult(contents: String) {
+        try {
+            // Decodifica o JSON do QR Code
+            val qrData = JSONObject(contents)
+            val roomId = qrData.getInt("roomId") // Obtém o ID da sala do QR Code
+            val roomName = qrData.getString("name") // Nome da sala, opcional
+
+            // Mostra mensagem temporária
+            Toast.makeText(this, "QR Code da sala: $roomName (ID: $roomId)", Toast.LENGTH_SHORT).show()
+
+            // Valida o QR Code com o backend
+            validateQrCode(roomId)
+        } catch (e: JSONException) {
             Toast.makeText(this, "QR Code inválido", Toast.LENGTH_SHORT).show()
+            e.printStackTrace()
         }
     }
 }

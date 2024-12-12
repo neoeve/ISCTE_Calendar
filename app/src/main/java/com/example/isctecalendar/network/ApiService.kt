@@ -10,6 +10,7 @@ import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 
 // Interface com os endpoints
@@ -25,4 +26,7 @@ interface ApiService {
 
     @POST("attendance")
     fun markAttendance(@Body attendanceRequest: AttendanceRequest): Call<Void>
+
+    @POST("validate-qr")
+    fun validateQrCode(@Query("roomId") roomId: Int): Call<Void>
 }

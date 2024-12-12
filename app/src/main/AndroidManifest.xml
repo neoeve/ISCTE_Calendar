@@ -29,11 +29,18 @@
 
         <activity
             android:name=".MainActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".CustomCaptureActivity"
+            android:exported="true"
+            android:theme="@style/zxingTheme">
         </activity>
     </application>
 </manifest>
