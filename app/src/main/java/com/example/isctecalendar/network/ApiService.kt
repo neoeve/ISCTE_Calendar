@@ -31,6 +31,6 @@ interface ApiService {
     @POST("/attendance/mark-presence")
     fun markPresence(@Body requestBody: Map<String, Int>): Call<PresenceResponse>
 
-    @GET("classroom/qrcode/{id}")
+    @GET("/qrcode/classroom/{id}")
     fun getClassRoomDetails(@Path("id") classRoomId: Int): Call<ClassRoomResponse>
 }

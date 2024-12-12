@@ -99,7 +99,6 @@ class MainActivity : AppCompatActivity() {
         scanButton.setOnClickListener { startQrCodeScanner() }
         scanButton.visibility = View.VISIBLE
     }
-
     private fun fetchSchedules() {
         val apiService = RetrofitClient.instance.create(ApiService::class.java)
         apiService.getScheduleByClassGroup(classGroupId).enqueue(object : Callback<ScheduleResponse> {
@@ -108,6 +107,15 @@ class MainActivity : AppCompatActivity() {
                     response.body()?.let { scheduleResponse ->
                         if (scheduleResponse.success) {
                             val schedules = scheduleResponse.schedules
+                            if (schedules.isEmpty()) {
+                                Toast.makeText(
+                                    this@MainActivity,
+                                    "Nenhum horário disponível para o grupo de classe.",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                return
+                            }
+
                             scheduleItems.clear()
 
                             // Agrupamento por mês
@@ -145,11 +153,31 @@ class MainActivity : AppCompatActivity() {
 
                             scheduleAdapter.notifyDataSetChanged()
                         } else {
-                            Toast.makeText(this@MainActivity, scheduleResponse.message ?: "Erro ao buscar horários.", Toast.LENGTH_SHORT).show()
+                            // Se o servidor retornar sucesso false, mostra a mensagem fornecida
+                            Toast.makeText(
+                                this@MainActivity,
+                                scheduleResponse.message ?: "Nenhum horário encontrado.",
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
+                    } ?: run {
+                        // Se a resposta não contiver um corpo
+                        Toast.makeText(this@MainActivity, "Resposta inesperada do servidor.", Toast.LENGTH_SHORT).show()
                     }
+                } else if (response.code() == 404) {
+                    // Tratamento especial para código 404
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Nenhum horário disponível para o grupo de classe.",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 } else {
-                    Toast.makeText(this@MainActivity, "Erro ao buscar horários.", Toast.LENGTH_SHORT).show()
+                    // Outros erros de resposta
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Erro ao buscar horários. Código: ${response.code()}",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
             }
 
@@ -158,6 +186,8 @@ class MainActivity : AppCompatActivity() {
             }
         })
     }
+
+
 
     private fun markAttendance(scheduleId: Int, studentId: Int, isAttending: Boolean) {
         val attendanceRequest = AttendanceRequest(
