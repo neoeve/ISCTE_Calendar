@@ -50,7 +50,7 @@ class ScheduleAdapter(
         private val headerTextView: TextView = view.findViewById(R.id.scheduleHeader)
 
         fun bind(header: ScheduleItem.Header) {
-            headerTextView.text = header.date
+            headerTextView.text = header.date // O conteúdo será formatado (mês ou dia) na MainActivity
         }
     }
 

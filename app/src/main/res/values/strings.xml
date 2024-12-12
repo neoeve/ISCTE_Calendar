@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">ISCTE Calendar</string>
+    <string name="app_name"></string>
     <string name="numero">Número Aluno</string>
     <string name="email">Email</string>
     <string name="senha">Senha</string>
@@ -11,4 +11,5 @@
     <string name="data">Data</string>
     <string name="horario">Horário</string>
     <string name="sala">Sala</string>
+    <string name="iscte_logo">iscte_logo</string>
 </resources>

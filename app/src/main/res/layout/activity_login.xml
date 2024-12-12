@@ -3,31 +3,53 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
+    android:gravity="center"
     android:padding="16dp">
 
+    <!-- Logótipo do ISCTE -->
+    <ImageView
+        android:id="@+id/iscteLogo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/iscte_logo"
+        android:contentDescription="@string/iscte_logo"
+        android:layout_marginBottom="24dp" />
+
+    <!-- Campo de email -->
     <EditText
         android:id="@+id/emailEditText"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="@string/email"
-        android:inputType="textEmailAddress" />
+        android:hint="Email"
+        android:inputType="textEmailAddress"
+        android:layout_marginBottom="8dp" />
 
+    <!-- Campo de senha -->
     <EditText
         android:id="@+id/passwordEditText"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="@string/senha"
-        android:inputType="textPassword" />
+        android:hint="Senha"
+        android:inputType="textPassword"
+        android:layout_marginBottom="16dp" />
 
+    <!-- Botão de login -->
     <Button
         android:id="@+id/loginButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/entrar" />
+        android:text="Entrar"
+        android:textColor="@color/button_text"
+        android:backgroundTint="@color/primary" />
 
+
+    <!-- Botão de registo -->
     <Button
         android:id="@+id/registerButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/registarse" />
+        android:text="Registrar-se"
+        android:textColor="@color/button_text"
+        android:backgroundTint="@color/primary" />
+
 </LinearLayout>

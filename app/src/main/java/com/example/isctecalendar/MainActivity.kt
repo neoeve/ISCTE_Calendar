@@ -1,5 +1,6 @@
 package com.example.isctecalendar
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -7,41 +8,40 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.isctecalendar.network.ApiService
 import com.example.isctecalendar.network.RetrofitClient
-import com.example.isctecalendar.data.ScheduleResponse
 import com.example.isctecalendar.data.ScheduleItem
 import com.example.isctecalendar.adapters.ScheduleAdapter
 import com.example.isctecalendar.data.AttendanceRequest
+import com.example.isctecalendar.data.ScheduleResponse
+import com.google.zxing.integration.android.IntentIntegrator
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import android.widget.Button
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var recyclerView: RecyclerView
     private lateinit var scheduleAdapter: ScheduleAdapter
-    private val scheduleItems = mutableListOf<ScheduleItem>() // Lista de ScheduleItem
-    private var userId: Int = -1 // ID do usuário
+    private val scheduleItems = mutableListOf<ScheduleItem>()
+    private var userId: Int = -1 // ID do utilizador
 
-    private fun formatMonth(dateString: String): String {
-        val inputFormat = SimpleDateFormat("yyyy-MM", Locale.getDefault())
-        val date = inputFormat.parse(dateString)
-        val outputFormat = SimpleDateFormat("MMMM yyyy", Locale.getDefault()) // Mês por extenso
-        return outputFormat.format(date!!)
+    private fun formatarMes(data: String): String {
+        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val mesFormatado = SimpleDateFormat("MMMM yyyy", Locale("pt", "PT"))
+        return sdf.parse(data)?.let { mesFormatado.format(it).replaceFirstChar { it.uppercase() } } ?: data
     }
 
-    private fun formatDay(dateString: String): String {
-        val inputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-        val date = inputFormat.parse(dateString)
-        val outputFormat = SimpleDateFormat("EEEE, dd", Locale.getDefault()) // Dia da semana e dia
-        return outputFormat.format(date!!)
+    private fun formatarDia(data: String): String {
+        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val diaFormatado = SimpleDateFormat("EEEE, d", Locale("pt", "PT"))
+        return sdf.parse(data)?.let { diaFormatado.format(it).replaceFirstChar { it.uppercase() } } ?: data
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
 
         // Obtém o ID do aluno a partir da Intent
         userId = intent.getIntExtra("studentId", -1)
@@ -62,6 +62,10 @@ class MainActivity : AppCompatActivity() {
 
         // Busca os horários
         fetchSchedules()
+
+        // Configurar leitura de QR Code
+        val scanButton = findViewById<Button>(R.id.scanButton)
+        scanButton.setOnClickListener { startQrCodeScanner() }
     }
 
     private fun fetchSchedules() {
@@ -75,33 +79,48 @@ class MainActivity : AppCompatActivity() {
         apiService.getScheduleByClassGroup(classGroupId).enqueue(object : Callback<ScheduleResponse> {
             override fun onResponse(call: Call<ScheduleResponse>, response: Response<ScheduleResponse>) {
                 if (response.isSuccessful) {
-                    response.body()?.schedules?.let { schedules ->
-                        scheduleItems.clear()
+                    response.body()?.let { scheduleResponse ->
+                        if (scheduleResponse.success) {
+                            val schedules = scheduleResponse.schedules
+                            scheduleItems.clear()
 
-                        // Agrupar por mês e por dia
-                        val groupedByMonth = schedules.groupBy { it.date.substring(0, 7) } // "yyyy-MM"
-                        groupedByMonth.forEach { (month, schedulesForMonth) ->
-                            scheduleItems.add(ScheduleItem.Header(formatMonth(month))) // Cabeçalho do mês
+                            // Agrupamento por mês
+                            val groupedByMonth = schedules.groupBy { schedule ->
+                                formatarMes(schedule.date)
+                            }
 
-                            // Agrupar por dia
-                            val groupedByDay = schedulesForMonth.groupBy { it.date }
-                            groupedByDay.forEach { (day, schedulesForDay) ->
-                                scheduleItems.add(ScheduleItem.Header(formatDay(day))) // Cabeçalho do dia
+                            groupedByMonth.forEach { (month, schedulesInMonth) ->
+                                // Adiciona o cabeçalho do mês
+                                scheduleItems.add(ScheduleItem.Header(month))
 
-                                // Adicionar os detalhes do horário
-                                schedulesForDay.forEach { schedule ->
-                                    scheduleItems.add(ScheduleItem.ScheduleDetail(
-                                        id = schedule.id,
-                                        startTime = schedule.startTime,
-                                        endTime = schedule.endTime,
-                                        subject = schedule.subject,
-                                        classRoom = schedule.classRoom
-                                    ))
+                                // Agrupa os horários dentro do mês por dia
+                                val groupedByDay = schedulesInMonth.groupBy { schedule ->
+                                    formatarDia(schedule.date)
+                                }
+
+                                groupedByDay.forEach { (day, schedulesInDay) ->
+                                    // Adiciona o cabeçalho do dia
+                                    scheduleItems.add(ScheduleItem.Header(day))
+
+                                    // Adiciona os detalhes das aulas
+                                    schedulesInDay.forEach { schedule ->
+                                        scheduleItems.add(
+                                            ScheduleItem.ScheduleDetail(
+                                                id = schedule.id,
+                                                startTime = schedule.startTime,
+                                                endTime = schedule.endTime,
+                                                subject = schedule.subject,
+                                                classRoom = schedule.classRoom
+                                            )
+                                        )
+                                    }
                                 }
                             }
-                        }
 
-                        scheduleAdapter.notifyDataSetChanged()
+                            scheduleAdapter.notifyDataSetChanged()
+                        } else {
+                            Toast.makeText(this@MainActivity, scheduleResponse.message ?: "Erro ao buscar horários.", Toast.LENGTH_SHORT).show()
+                        }
                     }
                 } else {
                     Toast.makeText(this@MainActivity, "Erro ao buscar horários.", Toast.LENGTH_SHORT).show()
@@ -135,5 +154,42 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this@MainActivity, "Erro de conexão: ${t.message}", Toast.LENGTH_SHORT).show()
             }
         })
+    }
+
+    private fun startQrCodeScanner() {
+        IntentIntegrator(this).apply {
+            setDesiredBarcodeFormats(IntentIntegrator.QR_CODE)
+            setPrompt("Posicione o QR Code dentro da área")
+            setCameraId(0) // Use a câmera traseira
+            setBeepEnabled(true) // Som ao ler QR
+            setBarcodeImageEnabled(false)
+            initiateScan()
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        val result = IntentIntegrator.parseActivityResult(requestCode, resultCode, data)
+        if (result != null) {
+            if (result.contents == null) {
+                Toast.makeText(this, "Leitura cancelada", Toast.LENGTH_SHORT).show()
+            } else {
+                handleQrCodeResult(result.contents)
+            }
+        } else {
+            super.onActivityResult(requestCode, resultCode, data)
+        }
+    }
+
+    private fun handleQrCodeResult(contents: String) {
+        // Processar o conteúdo do QR Code
+        Toast.makeText(this, "QR Code lido: $contents", Toast.LENGTH_SHORT).show()
+
+        // Exemplo: usar o ID da aula para marcar presença
+        val scheduleId = contents.toIntOrNull()
+        if (scheduleId != null) {
+            markAttendance(scheduleId, userId, true)
+        } else {
+            Toast.makeText(this, "QR Code inválido", Toast.LENGTH_SHORT).show()
+        }
     }
 }
