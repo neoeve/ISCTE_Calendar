@@ -2,9 +2,11 @@ package com.example.isctecalendar
 
 import android.content.Intent
 import android.os.Bundle
+import android.text.InputType
 import android.util.Log
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.isctecalendar.network.ApiService
@@ -24,6 +26,26 @@ class LoginActivity : AppCompatActivity() {
         val emailEditText = findViewById<EditText>(R.id.emailEditText)
         val passwordEditText = findViewById<EditText>(R.id.passwordEditText)
         val loginButton = findViewById<Button>(R.id.loginButton)
+        val togglePasswordVisibility = findViewById<ImageView>(R.id.togglePasswordVisibility)
+        val registerButton = findViewById<Button>(R.id.registerButton)
+
+        var isPasswordVisible = false
+
+        // Configuração do botão para alternar a visibilidade da senha
+        togglePasswordVisibility.setOnClickListener {
+            isPasswordVisible = !isPasswordVisible
+            if (isPasswordVisible) {
+                // Mostrar senha
+                passwordEditText.inputType = InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+                togglePasswordVisibility.setImageResource(R.drawable.ic_visibility)
+            } else {
+                // Ocultar senha
+                passwordEditText.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+                togglePasswordVisibility.setImageResource(R.drawable.ic_visibility_off)
+            }
+            // Move o cursor para o final
+            passwordEditText.setSelection(passwordEditText.text.length)
+        }
 
         loginButton.setOnClickListener {
             val email = emailEditText.text.toString()
@@ -36,12 +58,10 @@ class LoginActivity : AppCompatActivity() {
             }
         }
 
-        val registerButton = findViewById<Button>(R.id.registerButton)
         registerButton.setOnClickListener {
             val intent = Intent(this, RegisterActivity::class.java)
             startActivity(intent)
         }
-
     }
 
     private fun login(email: String, password: String) {
@@ -51,11 +71,10 @@ class LoginActivity : AppCompatActivity() {
         apiService.login(loginRequest).enqueue(object : Callback<LoginResponse> {
             override fun onResponse(call: Call<LoginResponse>, response: Response<LoginResponse>) {
                 if (response.isSuccessful) {
-                    // Verifica se o sucesso foi confirmado no body da resposta
                     val body = response.body()
                     if (body?.success == true) {
-                        val classGroupId = response.body()?.student?.classGroupId
-                        val studentId = response.body()?.student?.number
+                        val classGroupId = body.student?.classGroupId
+                        val studentId = body.student?.number
                         val intent = Intent(this@LoginActivity, MainActivity::class.java)
                         intent.putExtra("classGroupId", classGroupId)
                         intent.putExtra("studentId", studentId)
@@ -65,19 +84,11 @@ class LoginActivity : AppCompatActivity() {
                         Toast.makeText(this@LoginActivity, body?.message ?: "Erro no login", Toast.LENGTH_SHORT).show()
                     }
                 } else {
-                    // Lidando com códigos de erro HTTP fora do intervalo 200-299
                     when (response.code()) {
-                        401 -> {
-                            Toast.makeText(this@LoginActivity, "Credenciais inválidas.", Toast.LENGTH_SHORT).show()
-                        }
-                        500 -> {
-                            Toast.makeText(this@LoginActivity, "Erro no servidor. Tente novamente mais tarde.", Toast.LENGTH_SHORT).show()
-                        }
-                        else -> {
-                            Toast.makeText(this@LoginActivity, "Erro inesperado: ${response.code()}", Toast.LENGTH_SHORT).show()
-                        }
+                        401 -> Toast.makeText(this@LoginActivity, "Credenciais inválidas.", Toast.LENGTH_SHORT).show()
+                        500 -> Toast.makeText(this@LoginActivity, "Erro no servidor. Tente novamente mais tarde.", Toast.LENGTH_SHORT).show()
+                        else -> Toast.makeText(this@LoginActivity, "Erro inesperado: ${response.code()}", Toast.LENGTH_SHORT).show()
                     }
-                    // Log adicional para análise
                     Log.e("LoginActivity", "Erro HTTP: ${response.code()} - ${response.errorBody()?.string()}")
                 }
             }

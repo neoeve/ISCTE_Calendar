@@ -3,53 +3,73 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:gravity="center"
-    android:padding="16dp">
+    android:padding="24dp"
+    android:gravity="center">
 
-    <!-- Logótipo do ISCTE -->
+    <!-- Logo -->
     <ImageView
-        android:id="@+id/iscteLogo"
+        android:id="@+id/logoImageView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:src="@drawable/iscte_logo"
-        android:contentDescription="@string/iscte_logo"
+        android:background="@android:color/white"
         android:layout_marginBottom="24dp" />
 
-    <!-- Campo de email -->
+    <!-- Campo de Email -->
     <EditText
         android:id="@+id/emailEditText"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="Email"
         android:inputType="textEmailAddress"
-        android:layout_marginBottom="8dp" />
-
-    <!-- Campo de senha -->
-    <EditText
-        android:id="@+id/passwordEditText"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Senha"
-        android:inputType="textPassword"
+        android:backgroundTint="@color/gray"
+        android:paddingBottom="8dp"
         android:layout_marginBottom="16dp" />
 
-    <!-- Botão de login -->
+    <!-- Campo de Senha com botão de visibilidade -->
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp">
+
+        <EditText
+            android:id="@+id/passwordEditText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Senha"
+            android:inputType="textPassword"
+            android:backgroundTint="@color/gray"
+            android:paddingBottom="8dp" />
+
+        <ImageView
+            android:id="@+id/togglePasswordVisibility"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:src="@drawable/ic_visibility_off"
+            android:contentDescription="Mostrar ou Esconder Senha"
+            android:padding="4dp" />
+    </RelativeLayout>
+
+    <!-- Botão de Login -->
     <Button
         android:id="@+id/loginButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
         android:text="Entrar"
-        android:textColor="@color/button_text"
-        android:backgroundTint="@color/primary" />
+        android:backgroundTint="@color/accent"
+        android:textColor="@android:color/white" />
 
-
-    <!-- Botão de registo -->
+    <!-- Botão de Registro -->
     <Button
         android:id="@+id/registerButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:layout_marginBottom="16dp"
         android:text="Registrar-se"
-        android:textColor="@color/button_text"
-        android:backgroundTint="@color/primary" />
-
+        android:backgroundTint="@color/accent"
+        android:textColor="@android:color/white" />
 </LinearLayout>
