@@ -38,6 +38,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/registar"
-        android:backgroundTint="@color/accent"
+        android:backgroundTint="@color/iscte_blue"
         android:textColor="@android:color/white" />
 </LinearLayout>

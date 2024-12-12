@@ -17,5 +17,6 @@
     <color name="primary">#0A74DA</color> <!-- Azul principal -->
     <color name="primary_dark">#084C9D</color> <!-- Azul mais escuro -->
     <color name="accent">#70BFFF</color> <!-- Azul claro -->
+    <color name="iscte_blue">#0D28C2</color>
     <color name="button_text">#FFFFFF</color> <!-- Texto branco para contraste -->
 </resources>

@@ -60,7 +60,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:text="Entrar"
-        android:backgroundTint="@color/accent"
+        android:backgroundTint="@color/iscte_blue"
         android:textColor="@android:color/white" />
 
     <!-- Botão de Registro -->
@@ -71,6 +71,6 @@
         android:layout_marginTop="2dp"
         android:layout_marginBottom="16dp"
         android:text="Registrar-se"
-        android:backgroundTint="@color/accent"
+        android:backgroundTint="@color/iscte_blue"
         android:textColor="@android:color/white" />
 </LinearLayout>
