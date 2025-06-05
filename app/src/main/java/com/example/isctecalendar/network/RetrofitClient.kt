@@ -25,6 +25,7 @@ object RetrofitClient {
         }
     }
 
+    //private val BASE_URL = getBaseUrl()
     private val BASE_URL = getBaseUrl()
 
     val instance: Retrofit by lazy {
